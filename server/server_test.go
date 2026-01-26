@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/alecthomas/assert"
 )
 
 type StubPlayerStore struct {
@@ -28,7 +30,7 @@ func TestGETPlayers(t *testing.T) {
 			"Floyd":  10,
 		},
 	}
-	server := &PlayerServer{&store}
+	server := NewPlayerServer(&store)
 
 	tests := []struct {
 		name               string
@@ -94,7 +96,7 @@ func TestStoreWins(t *testing.T) {
 		winCalls: nil,
 	}
 
-	server := &PlayerServer{&store}
+	server := NewPlayerServer(&store)
 	t.Run("it returns accepted on POST", func(t *testing.T) {
 		player := "Pepper"
 		request := newPostWinRequest(player)
@@ -116,4 +118,19 @@ func TestStoreWins(t *testing.T) {
 func newPostWinRequest(name string) *http.Request {
 	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/players/%s", name), nil)
 	return req
+}
+
+func TestLeague(t *testing.T) {
+	store := StubPlayerStore{}
+	server := NewPlayerServer(&store)
+
+	t.Run("it returns 200 on /league", func(t *testing.T) {
+		request, err := http.NewRequest(http.MethodGet, "/league", nil)
+		assert.NoError(t, err)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assertStatus(t, response.Code, http.StatusOK)
+	})
 }
