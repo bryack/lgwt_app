@@ -30,33 +30,43 @@ func TestGETPlayers(t *testing.T) {
 	}
 	server := &PlayerServer{&store}
 
-	t.Run("returns Pepper's score", func(t *testing.T) {
-		request := newGetScoreRequest("Pepper")
-		response := httptest.NewRecorder()
+	tests := []struct {
+		name               string
+		player             string
+		expectedHTTPStatus int
+		expectedScore      string
+	}{
+		{
+			name:               "Returns Pepper's score",
+			player:             "Pepper",
+			expectedHTTPStatus: http.StatusOK,
+			expectedScore:      "20",
+		},
+		{
+			name:               "Returns Floyd's score",
+			player:             "Floyd",
+			expectedHTTPStatus: http.StatusOK,
+			expectedScore:      "10",
+		},
+		{
+			name:               "Returns 404 on missing players",
+			player:             "Apollo",
+			expectedHTTPStatus: http.StatusNotFound,
+			expectedScore:      "0",
+		},
+	}
 
-		server.ServeHTTP(response, request)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := newGetScoreRequest(tt.player)
+			response := httptest.NewRecorder()
 
-		assertStatus(t, response.Code, http.StatusOK)
-		assertResponseBody(t, response.Body.String(), "20")
-	})
-	t.Run("returns Floyd's score", func(t *testing.T) {
-		request := newGetScoreRequest("Floyd")
-		response := httptest.NewRecorder()
+			server.ServeHTTP(response, request)
 
-		server.ServeHTTP(response, request)
-
-		assertStatus(t, response.Code, http.StatusOK)
-		assertResponseBody(t, response.Body.String(), "10")
-	})
-
-	t.Run("returns 404 on missing players", func(t *testing.T) {
-		request := newGetScoreRequest("Apollo")
-		response := httptest.NewRecorder()
-
-		server.ServeHTTP(response, request)
-
-		assertStatus(t, response.Code, http.StatusNotFound)
-	})
+			assertStatus(t, response.Code, tt.expectedHTTPStatus)
+			assertResponseBody(t, response.Body.String(), tt.expectedScore)
+		})
+	}
 }
 
 func newGetScoreRequest(name string) *http.Request {
@@ -80,7 +90,8 @@ func assertStatus(t testing.TB, got, want int) {
 
 func TestStoreWins(t *testing.T) {
 	store := StubPlayerStore{
-		scores: map[string]int{},
+		scores:   map[string]int{},
+		winCalls: nil,
 	}
 
 	server := &PlayerServer{&store}
