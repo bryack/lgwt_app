@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,6 +14,7 @@ import (
 type StubPlayerStore struct {
 	scores   map[string]int
 	winCalls []string
+	league   []Player
 }
 
 func (s *StubPlayerStore) GetPlayerScore(name string) int {
@@ -22,6 +24,10 @@ func (s *StubPlayerStore) GetPlayerScore(name string) int {
 
 func (s *StubPlayerStore) RecordWin(name string) {
 	s.winCalls = append(s.winCalls, name)
+}
+
+func (s *StubPlayerStore) GetLeague() []Player {
+	return s.league
 }
 
 func TestGETPlayers(t *testing.T) {
@@ -122,23 +128,39 @@ func newPostWinRequest(name string) *http.Request {
 }
 
 func TestLeague(t *testing.T) {
-	store := StubPlayerStore{}
-	server := NewPlayerServer(&store)
-
 	t.Run("it returns 200 on /league", func(t *testing.T) {
-		request, err := http.NewRequest(http.MethodGet, "/league", nil)
+		wantedLeague := []Player{
+			{"Cleo", 32},
+			{"Chris", 20},
+			{"Tiest", 14},
+		}
+		store := StubPlayerStore{nil, nil, wantedLeague}
+		server := NewPlayerServer(&store)
+
+		request, err := newLeagueRequest(t)
 		assert.NoError(t, err)
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)
 
-		var got []Player
-
-		err = json.NewDecoder(response.Body).Decode(&got)
-		if err != nil {
-			t.Fatalf("Unable to parse response from server %q into slice of Player, '%v'", response.Body, err)
-		}
+		got := getLeagueFromResponse(t, response.Body)
 
 		assertStatus(t, response.Code, http.StatusOK)
+		assert.Equal(t, got, wantedLeague)
+		assert.Equal(t, jsonContentType, response.Result().Header.Get("content-type"), "response did not have content-type of application/json")
 	})
+}
+
+func newLeagueRequest(t *testing.T) (*http.Request, error) {
+	t.Helper()
+	return http.NewRequest(http.MethodGet, "/league", nil)
+}
+
+func getLeagueFromResponse(t *testing.T, body io.Reader) (league []Player) {
+	t.Helper()
+	err := json.NewDecoder(body).Decode(&league)
+	if err != nil {
+		t.Fatalf("Unable to parse response from server %q into slice of Player, '%v'", body, err)
+	}
+	return
 }
