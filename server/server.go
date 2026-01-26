@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -12,7 +13,7 @@ const jsonContentType = "application/json"
 type PlayerStore interface {
 	GetPlayerScore(name string) int
 	RecordWin(name string)
-	GetLeague() []Player
+	GetLeague() ([]Player, error)
 }
 
 type PlayerServer struct {
@@ -21,8 +22,8 @@ type PlayerServer struct {
 }
 
 type Player struct {
-	Name string
-	Wins int
+	Name string `json:"name"`
+	Wins int    `json:"wins"`
 }
 
 func NewPlayerServer(store PlayerStore) *PlayerServer {
@@ -52,8 +53,15 @@ func (p *PlayerServer) processWin(w http.ResponseWriter, player string) {
 }
 
 func (p *PlayerServer) leagueHandler(w http.ResponseWriter, r *http.Request) {
+	league, err := p.Store.GetLeague()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("content-type", jsonContentType)
-	json.NewEncoder(w).Encode(p.Store.GetLeague())
+	if err := json.NewEncoder(w).Encode(league); err != nil {
+		log.Println("encode failed:", err)
+	}
 }
 
 func (p *PlayerServer) playersHandler(w http.ResponseWriter, r *http.Request) {

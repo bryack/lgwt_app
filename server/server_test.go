@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,6 +16,7 @@ type StubPlayerStore struct {
 	scores   map[string]int
 	winCalls []string
 	league   []Player
+	err      error
 }
 
 func (s *StubPlayerStore) GetPlayerScore(name string) int {
@@ -26,8 +28,11 @@ func (s *StubPlayerStore) RecordWin(name string) {
 	s.winCalls = append(s.winCalls, name)
 }
 
-func (s *StubPlayerStore) GetLeague() []Player {
-	return s.league
+func (s *StubPlayerStore) GetLeague() ([]Player, error) {
+	if s.err != nil {
+		return []Player{}, s.err
+	}
+	return s.league, nil
 }
 
 func TestGETPlayers(t *testing.T) {
@@ -128,13 +133,13 @@ func newPostWinRequest(name string) *http.Request {
 }
 
 func TestLeague(t *testing.T) {
+	wantedLeague := []Player{
+		{"Cleo", 32},
+		{"Chris", 20},
+		{"Tiest", 14},
+	}
 	t.Run("it returns 200 on /league", func(t *testing.T) {
-		wantedLeague := []Player{
-			{"Cleo", 32},
-			{"Chris", 20},
-			{"Tiest", 14},
-		}
-		store := StubPlayerStore{nil, nil, wantedLeague}
+		store := StubPlayerStore{nil, nil, wantedLeague, nil}
 		server := NewPlayerServer(&store)
 
 		request, err := newLeagueRequest(t)
@@ -148,6 +153,19 @@ func TestLeague(t *testing.T) {
 		assertStatus(t, response.Code, http.StatusOK)
 		assert.Equal(t, got, wantedLeague)
 		assert.Equal(t, jsonContentType, response.Result().Header.Get("content-type"), "response did not have content-type of application/json")
+	})
+
+	t.Run("handle 500", func(t *testing.T) {
+		store := StubPlayerStore{nil, nil, wantedLeague, errors.New("database connection failed")}
+		server := NewPlayerServer(&store)
+
+		request, err := newLeagueRequest(t)
+		assert.NoError(t, err)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assertStatus(t, response.Code, http.StatusInternalServerError)
 	})
 }
 

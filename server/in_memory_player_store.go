@@ -26,10 +26,12 @@ func (i *InMemoryPlayerStore) RecordWin(name string) {
 	i.store[name]++
 }
 
-func (i *InMemoryPlayerStore) GetLeague() []Player {
-	var league []Player
+func (i *InMemoryPlayerStore) GetLeague() ([]Player, error) {
+	i.lock.RLock()
+	defer i.lock.RUnlock()
+	league := make([]Player, 0, len(i.store))
 	for name, wins := range i.store {
 		league = append(league, Player{Name: name, Wins: wins})
 	}
-	return league
+	return league, nil
 }
