@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 
 	"github.com/bryack/lgwt_app/domain"
 )
@@ -48,6 +49,9 @@ func initialisePlayerDBFile(database *os.File) error {
 }
 
 func (f *FileSystemPlayerStore) GetLeague() (domain.League, error) {
+	sort.Slice(f.league, func(i, j int) bool {
+		return f.league[i].Wins > f.league[j].Wins
+	})
 	return f.league, nil
 }
 

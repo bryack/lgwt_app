@@ -21,8 +21,8 @@ func TestFileSystemStore(t *testing.T) {
 		assert.NoError(t, err)
 
 		want := domain.League{
-			{Name: "Cleo", Wins: 10},
 			{Name: "Chris", Wins: 33},
+			{Name: "Cleo", Wins: 10},
 		}
 
 		assert.Equal(t, want, got)
@@ -81,5 +81,24 @@ func TestFileSystemStore(t *testing.T) {
 
 		_, err := NewFileSystemPlayerStore(database)
 		assert.NoError(t, err)
+	})
+
+	t.Run("league sorted", func(t *testing.T) {
+		database, cleanDatabase := testhelpers.CreateTempFile(t, `[
+			{"Name": "Cleo", "Wins": 10},
+			{"Name": "Chris", "Wins": 33}]`)
+		defer cleanDatabase()
+
+		store, err := NewFileSystemPlayerStore(database)
+		assert.NoError(t, err)
+
+		got, err := store.GetLeague()
+		assert.NoError(t, err)
+		want := domain.League{
+			{Name: "Chris", Wins: 33},
+			{Name: "Cleo", Wins: 10},
+		}
+
+		assert.Equal(t, want, got)
 	})
 }
