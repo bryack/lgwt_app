@@ -1,18 +1,16 @@
 package database
 
 import (
-	"encoding/json"
 	"io"
 
-	"github.com/bryack/lgwt_app/server"
+	"github.com/bryack/lgwt_app/domain"
 )
 
 type FileSystemPlayerStore struct {
 	database io.Reader
 }
 
-func (f *FileSystemPlayerStore) GetLeague() []server.Player {
-	var league []server.Player
-	json.NewDecoder(f.database).Decode(&league)
+func (f *FileSystemPlayerStore) GetLeague() []domain.Player {
+	league, _ := NewLeague(f.database)
 	return league
 }

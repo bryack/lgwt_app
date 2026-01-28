@@ -1,6 +1,10 @@
 package server
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/bryack/lgwt_app/domain"
+)
 
 type InMemoryPlayerStore struct {
 	store map[string]int
@@ -26,12 +30,12 @@ func (i *InMemoryPlayerStore) RecordWin(name string) {
 	i.store[name]++
 }
 
-func (i *InMemoryPlayerStore) GetLeague() ([]Player, error) {
+func (i *InMemoryPlayerStore) GetLeague() ([]domain.Player, error) {
 	i.lock.RLock()
 	defer i.lock.RUnlock()
-	league := make([]Player, 0, len(i.store))
+	league := make([]domain.Player, 0, len(i.store))
 	for name, wins := range i.store {
-		league = append(league, Player{Name: name, Wins: wins})
+		league = append(league, domain.Player{Name: name, Wins: wins})
 	}
 	return league, nil
 }

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bryack/lgwt_app/server"
+	"github.com/bryack/lgwt_app/domain"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,7 +19,7 @@ func TestFileSystemStore(t *testing.T) {
 
 		got := store.GetLeague()
 
-		want := []server.Player{
+		want := []domain.Player{
 			{"Cleo", 10},
 			{"Chris", 33},
 		}

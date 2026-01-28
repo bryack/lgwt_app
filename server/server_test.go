@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -9,13 +8,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/bryack/lgwt_app/database"
+	"github.com/bryack/lgwt_app/domain"
 	"github.com/stretchr/testify/assert"
 )
 
 type StubPlayerStore struct {
 	scores   map[string]int
 	winCalls []string
-	league   []Player
+	league   []domain.Player
 	err      error
 }
 
@@ -28,9 +29,9 @@ func (s *StubPlayerStore) RecordWin(name string) {
 	s.winCalls = append(s.winCalls, name)
 }
 
-func (s *StubPlayerStore) GetLeague() ([]Player, error) {
+func (s *StubPlayerStore) GetLeague() ([]domain.Player, error) {
 	if s.err != nil {
-		return []Player{}, s.err
+		return []domain.Player{}, s.err
 	}
 	return s.league, nil
 }
@@ -133,7 +134,7 @@ func newPostWinRequest(name string) *http.Request {
 }
 
 func TestLeague(t *testing.T) {
-	wantedLeague := []Player{
+	wantedLeague := []domain.Player{
 		{"Cleo", 32},
 		{"Chris", 20},
 		{"Tiest", 14},
@@ -174,11 +175,11 @@ func newLeagueRequest(t *testing.T) (*http.Request, error) {
 	return http.NewRequest(http.MethodGet, "/league", nil)
 }
 
-func getLeagueFromResponse(t *testing.T, body io.Reader) (league []Player) {
+func getLeagueFromResponse(t *testing.T, body io.Reader) (league []domain.Player) {
 	t.Helper()
-	err := json.NewDecoder(body).Decode(&league)
+	league, err := database.NewLeague(body)
 	if err != nil {
-		t.Fatalf("Unable to parse response from server %q into slice of Player, '%v'", body, err)
+		t.Fatalf("failed to get league from response body: %v", err)
 	}
 	return
 }
