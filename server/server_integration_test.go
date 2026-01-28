@@ -6,11 +6,15 @@ import (
 	"testing"
 
 	"github.com/bryack/lgwt_app/domain"
+	"github.com/bryack/lgwt_app/filesystem"
+	"github.com/bryack/lgwt_app/testhelpers"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRecordingWinsAndRetrievingThem(t *testing.T) {
-	store := NewInMemoryPlayerStore()
+	db, cleanDatabase := testhelpers.CreateTempFile(t, "")
+	defer cleanDatabase()
+	store := filesystem.NewFileSystemPlayerStore(db)
 	server := NewPlayerServer(store)
 	player := "Pepper"
 

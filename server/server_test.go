@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/bryack/lgwt_app/database"
 	"github.com/bryack/lgwt_app/domain"
 	"github.com/stretchr/testify/assert"
 )
@@ -29,9 +28,9 @@ func (s *StubPlayerStore) RecordWin(name string) {
 	s.winCalls = append(s.winCalls, name)
 }
 
-func (s *StubPlayerStore) GetLeague() ([]domain.Player, error) {
+func (s *StubPlayerStore) GetLeague() (domain.League, error) {
 	if s.err != nil {
-		return []domain.Player{}, s.err
+		return domain.League{}, s.err
 	}
 	return s.league, nil
 }
@@ -177,7 +176,7 @@ func newLeagueRequest(t *testing.T) (*http.Request, error) {
 
 func getLeagueFromResponse(t *testing.T, body io.Reader) (league []domain.Player) {
 	t.Helper()
-	league, err := database.NewLeague(body)
+	league, err := domain.NewLeague(body)
 	if err != nil {
 		t.Fatalf("failed to get league from response body: %v", err)
 	}
