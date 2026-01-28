@@ -74,4 +74,12 @@ func TestFileSystemStore(t *testing.T) {
 		want := 1
 		assert.Equal(t, want, got)
 	})
+
+	t.Run("works with an empty file", func(t *testing.T) {
+		database, cleanDatabase := testhelpers.CreateTempFile(t, "")
+		defer cleanDatabase()
+
+		_, err := NewFileSystemPlayerStore(database)
+		assert.NoError(t, err)
+	})
 }
