@@ -12,9 +12,12 @@ import (
 )
 
 func TestRecordingWinsAndRetrievingThem(t *testing.T) {
-	db, cleanDatabase := testhelpers.CreateTempFile(t, "")
+	db, cleanDatabase := testhelpers.CreateTempFile(t, `[]`)
 	defer cleanDatabase()
-	store := filesystem.NewFileSystemPlayerStore(db)
+	store, err := filesystem.NewFileSystemPlayerStore(db)
+	if err != nil {
+		t.Fatalf("failed to create file system player store: %v", err)
+	}
 	server := NewPlayerServer(store)
 	player := "Pepper"
 

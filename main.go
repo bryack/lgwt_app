@@ -17,7 +17,10 @@ func main() {
 		log.Fatalf("failed to open file %q: %v", dbFileName, err)
 	}
 
-	store := filesystem.NewFileSystemPlayerStore(db)
+	store, err := filesystem.NewFileSystemPlayerStore(db)
+	if err != nil {
+		log.Fatalf("failed to create file system player store: %v", err)
+	}
 
 	server := server.NewPlayerServer(store)
 
