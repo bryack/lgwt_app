@@ -38,7 +38,9 @@ func TestRecordingWinsAndRetrievingThem(t *testing.T) {
 		assertStatus(t, response.Code, http.StatusOK)
 
 		got := getLeagueFromResponse(t, response.Body)
-		want := []domain.Player{{"Pepper", 3}}
+		want := []domain.Player{
+			{Name: "Pepper", Wins: 3},
+		}
 
 		assert.Equal(t, want, got)
 	})

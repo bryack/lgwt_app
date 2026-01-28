@@ -20,8 +20,8 @@ func TestFileSystemStore(t *testing.T) {
 		assert.NoError(t, err)
 
 		want := domain.League{
-			{"Cleo", 10},
-			{"Chris", 33},
+			{Name: "Cleo", Wins: 10},
+			{Name: "Chris", Wins: 33},
 		}
 
 		assert.Equal(t, want, got)

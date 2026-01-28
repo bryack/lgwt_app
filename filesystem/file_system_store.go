@@ -3,20 +3,21 @@ package filesystem
 import (
 	"encoding/json"
 	"io"
+	"os"
 
 	"github.com/bryack/lgwt_app/domain"
 )
 
 type FileSystemPlayerStore struct {
-	database io.ReadWriteSeeker
+	database *json.Encoder
 	league   domain.League
 }
 
-func NewFileSystemPlayerStore(database io.ReadWriteSeeker) *FileSystemPlayerStore {
+func NewFileSystemPlayerStore(database *os.File) *FileSystemPlayerStore {
 	database.Seek(0, io.SeekStart)
 	league, _ := domain.NewLeague(database)
 	return &FileSystemPlayerStore{
-		database: database,
+		database: json.NewEncoder(&tape{database}),
 		league:   league,
 	}
 }
@@ -41,6 +42,5 @@ func (f *FileSystemPlayerStore) RecordWin(name string) {
 		f.league = append(f.league, domain.Player{Name: name, Wins: 1})
 	}
 
-	f.database.Seek(0, io.SeekStart)
-	json.NewEncoder(f.database).Encode(&f.league)
+	f.database.Encode(&f.league)
 }

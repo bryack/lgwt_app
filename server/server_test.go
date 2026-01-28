@@ -134,9 +134,9 @@ func newPostWinRequest(name string) *http.Request {
 
 func TestLeague(t *testing.T) {
 	wantedLeague := []domain.Player{
-		{"Cleo", 32},
-		{"Chris", 20},
-		{"Tiest", 14},
+		{Name: "Cleo", Wins: 32},
+		{Name: "Chris", Wins: 20},
+		{Name: "Tiest", Wins: 14},
 	}
 	t.Run("it returns 200 on /league", func(t *testing.T) {
 		store := StubPlayerStore{nil, nil, wantedLeague, nil}
