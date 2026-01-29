@@ -9,35 +9,13 @@ import (
 	"testing"
 
 	"github.com/bryack/lgwt_app/domain"
+	"github.com/bryack/lgwt_app/testhelpers"
 	"github.com/stretchr/testify/assert"
 )
 
-type StubPlayerStore struct {
-	scores   map[string]int
-	winCalls []string
-	league   []domain.Player
-	err      error
-}
-
-func (s *StubPlayerStore) GetPlayerScore(name string) int {
-	score := s.scores[name]
-	return score
-}
-
-func (s *StubPlayerStore) RecordWin(name string) {
-	s.winCalls = append(s.winCalls, name)
-}
-
-func (s *StubPlayerStore) GetLeague() (domain.League, error) {
-	if s.err != nil {
-		return domain.League{}, s.err
-	}
-	return s.league, nil
-}
-
 func TestGETPlayers(t *testing.T) {
-	store := StubPlayerStore{
-		scores: map[string]int{
+	store := testhelpers.StubPlayerStore{
+		Scores: map[string]int{
 			"Pepper": 20,
 			"Floyd":  10,
 		},
@@ -103,9 +81,9 @@ func assertStatus(t testing.TB, got, want int) {
 }
 
 func TestStoreWins(t *testing.T) {
-	store := StubPlayerStore{
-		scores:   map[string]int{},
-		winCalls: nil,
+	store := testhelpers.StubPlayerStore{
+		Scores:   map[string]int{},
+		WinCalls: nil,
 	}
 
 	server := NewPlayerServer(&store)
@@ -117,12 +95,12 @@ func TestStoreWins(t *testing.T) {
 		server.ServeHTTP(response, request)
 
 		assertStatus(t, response.Code, http.StatusAccepted)
-		if len(store.winCalls) != 1 {
-			t.Errorf("got %d calls to RecordWin, want %d", len(store.winCalls), 1)
+		if len(store.WinCalls) != 1 {
+			t.Errorf("got %d calls to RecordWin, want %d", len(store.WinCalls), 1)
 		}
 
-		if store.winCalls[0] != player {
-			t.Errorf("did not store correct winner got %q want %q", store.winCalls[0], player)
+		if store.WinCalls[0] != player {
+			t.Errorf("did not store correct winner got %q want %q", store.WinCalls[0], player)
 		}
 	})
 }
@@ -139,7 +117,7 @@ func TestLeague(t *testing.T) {
 		{Name: "Tiest", Wins: 14},
 	}
 	t.Run("it returns 200 on /league", func(t *testing.T) {
-		store := StubPlayerStore{nil, nil, wantedLeague, nil}
+		store := testhelpers.StubPlayerStore{Scores: nil, WinCalls: nil, League: wantedLeague, Err: nil}
 		server := NewPlayerServer(&store)
 
 		request, err := newLeagueRequest(t)
@@ -156,7 +134,7 @@ func TestLeague(t *testing.T) {
 	})
 
 	t.Run("handle 500", func(t *testing.T) {
-		store := StubPlayerStore{nil, nil, wantedLeague, errors.New("database connection failed")}
+		store := testhelpers.StubPlayerStore{Scores: nil, WinCalls: nil, League: wantedLeague, Err: errors.New("database connection failed")}
 		server := NewPlayerServer(&store)
 
 		request, err := newLeagueRequest(t)

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/bryack/lgwt_app/adapters/server"
 	"github.com/bryack/lgwt_app/filesystem"
-	"github.com/bryack/lgwt_app/server"
 )
 
 const dbFileName = "game.db.json"
