@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/bryack/lgwt_app/adapters/server"
 	"github.com/bryack/lgwt_app/filesystem"
@@ -12,15 +11,11 @@ import (
 const dbFileName = "game.db.json"
 
 func main() {
-	db, err := os.OpenFile(dbFileName, os.O_RDWR|os.O_CREATE, 0666)
+	store, close, err := filesystem.FileSystemPlayerStoreFromFile(dbFileName)
 	if err != nil {
-		log.Fatalf("failed to open file %q: %v", dbFileName, err)
+		log.Fatal(err)
 	}
-
-	store, err := filesystem.NewFileSystemPlayerStore(db)
-	if err != nil {
-		log.Fatalf("failed to create file system player store: %v", err)
-	}
+	defer close()
 
 	server := server.NewPlayerServer(store)
 

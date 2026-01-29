@@ -1,16 +1,35 @@
 package cli
 
 import (
+	"bufio"
 	"io"
+	"strings"
 
 	"github.com/bryack/lgwt_app/store"
 )
 
 type CLI struct {
 	store store.PlayerStore
-	in    io.Reader
+	in    *bufio.Scanner
+}
+
+func NewCLI(store store.PlayerStore, in io.Reader) *CLI {
+	return &CLI{
+		store: store,
+		in:    bufio.NewScanner(in),
+	}
 }
 
 func (cli *CLI) PlayPoker() {
-	cli.store.RecordWin("Chris")
+	userInput := cli.readLine()
+	cli.store.RecordWin(extractWinner(userInput))
+}
+
+func extractWinner(userInput string) string {
+	return strings.Replace(userInput, " wins", "", 1)
+}
+
+func (cli *CLI) readLine() string {
+	cli.in.Scan()
+	return cli.in.Text()
 }
