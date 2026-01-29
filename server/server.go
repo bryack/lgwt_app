@@ -7,23 +7,17 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bryack/lgwt_app/domain"
+	"github.com/bryack/lgwt_app/store"
 )
 
 const jsonContentType = "application/json"
 
-type PlayerStore interface {
-	GetPlayerScore(name string) int
-	RecordWin(name string)
-	GetLeague() (domain.League, error)
-}
-
 type PlayerServer struct {
-	Store PlayerStore
+	Store store.PlayerStore
 	http.Handler
 }
 
-func NewPlayerServer(store PlayerStore) *PlayerServer {
+func NewPlayerServer(store store.PlayerStore) *PlayerServer {
 	p := new(PlayerServer)
 	p.Store = store
 
