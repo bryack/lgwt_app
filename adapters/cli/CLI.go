@@ -4,23 +4,31 @@ import (
 	"bufio"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/bryack/lgwt_app/store"
 )
 
 type CLI struct {
-	store store.PlayerStore
-	in    *bufio.Scanner
+	store   store.PlayerStore
+	in      *bufio.Scanner
+	alerter BlindAlerter
 }
 
-func NewCLI(store store.PlayerStore, in io.Reader) *CLI {
+type BlindAlerter interface {
+	ScheduleAlertAt(duration time.Duration, amount int)
+}
+
+func NewCLI(store store.PlayerStore, in io.Reader, alerter BlindAlerter) *CLI {
 	return &CLI{
-		store: store,
-		in:    bufio.NewScanner(in),
+		store:   store,
+		in:      bufio.NewScanner(in),
+		alerter: alerter,
 	}
 }
 
 func (cli *CLI) PlayPoker() {
+	cli.alerter.ScheduleAlertAt(5*time.Second, 100)
 	userInput := cli.readLine()
 	cli.store.RecordWin(extractWinner(userInput))
 }
