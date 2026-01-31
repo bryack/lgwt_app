@@ -6,20 +6,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bryack/lgwt_app/scheduler"
 	"github.com/bryack/lgwt_app/store"
 )
 
 type CLI struct {
 	store   store.PlayerStore
 	in      *bufio.Scanner
-	alerter BlindAlerter
+	alerter scheduler.BlindAlerter
 }
 
-type BlindAlerter interface {
-	ScheduleAlertAt(duration time.Duration, amount int)
-}
-
-func NewCLI(store store.PlayerStore, in io.Reader, alerter BlindAlerter) *CLI {
+func NewCLI(store store.PlayerStore, in io.Reader, alerter scheduler.BlindAlerter) *CLI {
 	return &CLI{
 		store:   store,
 		in:      bufio.NewScanner(in),
