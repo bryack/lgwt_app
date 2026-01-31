@@ -12,10 +12,12 @@ import (
 type SpyGame struct {
 	startCalledWith  int
 	finishCalledWith string
+	startCalled      bool
 }
 
 func (s *SpyGame) Start(numberOfPlayers int) {
 	s.startCalledWith = numberOfPlayers
+	s.startCalled = true
 }
 
 func (s *SpyGame) Finish(winner string) {
@@ -43,5 +45,21 @@ func TestCLI(t *testing.T) {
 		c.PlayPoker()
 
 		assert.Equal(t, "Chris", game.finishCalledWith)
+	})
+
+	t.Run("it prints an error when a non numeric value is entered and does not start the game", func(t *testing.T) {
+		stdout := &bytes.Buffer{}
+		in := strings.NewReader("Pies\n")
+		game := &SpyGame{}
+
+		c := cli.NewCLI(in, stdout, game)
+		c.PlayPoker()
+
+		assert.True(t, game.startCalledWith == 0)
+		assert.True(t, !game.startCalled, "game should not have started")
+
+		gotPrompt := stdout.String()
+		wantPrompt := cli.PlayerPrompt + cli.BadPlayerInputErrMsg
+		assert.Equal(t, wantPrompt, gotPrompt)
 	})
 }
