@@ -2,126 +2,58 @@ package cli_test
 
 import (
 	"bytes"
-	"fmt"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/bryack/lgwt_app/adapters/cli"
 	"github.com/bryack/lgwt_app/testhelpers"
 	"github.com/stretchr/testify/assert"
 )
 
-var dummySpyAlerter = &SpyBlindAlerter{}
-var dummyPlayerStore = &testhelpers.StubPlayerStore{}
-var dummyStdIn = &bytes.Buffer{}
-var dummyStdOut = &bytes.Buffer{}
-
-type scheduledAlert struct {
-	at     time.Duration
-	amount int
+type SpyGame struct {
+	startCalledWith int
 }
 
-func (s scheduledAlert) String() string {
-	return fmt.Sprintf("%d chips at %v", s.amount, s.at)
-}
-
-type SpyBlindAlerter struct {
-	alerts []scheduledAlert
-}
-
-func (s *SpyBlindAlerter) ScheduleAlertAt(at time.Duration, amount int) {
-	s.alerts = append(s.alerts, scheduledAlert{at: at, amount: amount})
+func (s *SpyGame) Start(numberOfPlayers int) {
+	s.startCalledWith = numberOfPlayers
 }
 
 func TestCLI(t *testing.T) {
-	t.Run("record chris win from user input", func(t *testing.T) {
-		in := strings.NewReader("Chris wins\n")
-		playerStore := &testhelpers.StubPlayerStore{}
-		c := cli.NewCLI(playerStore, in, dummyStdOut, dummySpyAlerter)
-		c.PlayPoker()
-		assert.True(t, len(playerStore.WinCalls) != 0)
-
-		got := playerStore.WinCalls[0]
-		want := "Chris"
-		assert.Equal(t, want, got)
-	})
-	t.Run("record cleo win from user input", func(t *testing.T) {
-		in := strings.NewReader("Cleo wins\n")
-		playerStore := &testhelpers.StubPlayerStore{}
-		c := cli.NewCLI(playerStore, in, dummyStdOut, dummySpyAlerter)
-		c.PlayPoker()
-		assert.True(t, len(playerStore.WinCalls) != 0)
-
-		got := playerStore.WinCalls[0]
-		want := "Cleo"
-		assert.Equal(t, want, got)
-	})
-
-	t.Run("it schedules printing of blind values", func(t *testing.T) {
-		in := strings.NewReader("Cleo wins\n")
-		playerStore := &testhelpers.StubPlayerStore{}
-		blindAlerter := &SpyBlindAlerter{}
-		c := cli.NewCLI(playerStore, in, dummyStdOut, blindAlerter)
-		c.PlayPoker()
-
-		tests := []scheduledAlert{
-			{0 * time.Second, 100},
-			{10 * time.Minute, 200},
-			{20 * time.Minute, 300},
-			{30 * time.Minute, 400},
-			{40 * time.Minute, 500},
-			{50 * time.Minute, 600},
-			{60 * time.Minute, 800},
-			{70 * time.Minute, 1000},
-			{80 * time.Minute, 2000},
-			{90 * time.Minute, 4000},
-			{100 * time.Minute, 8000},
-		}
-
-		for i, tt := range tests {
-			t.Run(fmt.Sprint(tt), func(t *testing.T) {
-				if len(blindAlerter.alerts) <= 1 {
-					t.Fatalf("alert %d was not scheduled %v", i, blindAlerter.alerts)
-				}
-
-				alert := blindAlerter.alerts[i]
-
-				assert.Equal(t, alert.amount, tt.amount)
-				assert.Equal(t, alert.at, tt.at)
-			})
-		}
-	})
-
-	t.Run("it prompts the user to enter the number of players", func(t *testing.T) {
+	t.Run("it prompts the user to enter the number of players and starts the game", func(t *testing.T) {
 		stdout := &bytes.Buffer{}
 		in := strings.NewReader("7\n")
-		blindAlerter := &SpyBlindAlerter{}
+		game := &SpyGame{}
 
-		c := cli.NewCLI(dummyPlayerStore, in, stdout, blindAlerter)
+		playerStore := &testhelpers.StubPlayerStore{}
+
+		c := cli.NewCLI(playerStore, in, stdout, game)
 		c.PlayPoker()
 
-		got := stdout.String()
-		want := cli.PlayerPrompt
+		assert.Equal(t, cli.PlayerPrompt, stdout.String())
+		assert.Equal(t, 7, game.startCalledWith)
+	})
+	t.Run("record chris win from user input", func(t *testing.T) {
+		stdout := &bytes.Buffer{}
+		in := strings.NewReader("1\nChris wins\n")
+		playerStore := &testhelpers.StubPlayerStore{}
+		game := &SpyGame{}
 
-		assert.Equal(t, want, got)
+		c := cli.NewCLI(playerStore, in, stdout, game)
+		c.PlayPoker()
 
-		tests := []scheduledAlert{
-			{0 * time.Second, 100},
-			{12 * time.Minute, 200},
-			{24 * time.Minute, 300},
-			{36 * time.Minute, 400},
-		}
+		assert.Equal(t, 1, len(playerStore.WinCalls))
+		assert.Equal(t, "Chris", playerStore.WinCalls[0])
+	})
 
-		for i, tt := range tests {
-			t.Run(fmt.Sprint(tt), func(t *testing.T) {
-				if len(blindAlerter.alerts) <= 1 {
-					t.Fatalf("alert %d was not scheduled %v", i, blindAlerter.alerts)
-				}
+	t.Run("it starts the game with the number of players from user input", func(t *testing.T) {
+		in := strings.NewReader("7\nChris wins\n")
+		game := &SpyGame{}
+		store := &testhelpers.StubPlayerStore{}
+		out := &bytes.Buffer{}
 
-				got := blindAlerter.alerts[i]
-				assert.Equal(t, got, tt)
-			})
-		}
+		c := cli.NewCLI(store, in, out, game)
+		c.PlayPoker()
+
+		assert.Equal(t, 7, game.startCalledWith)
 	})
 }

@@ -6,27 +6,29 @@ import (
 	"io"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/bryack/lgwt_app/scheduler"
 	"github.com/bryack/lgwt_app/store"
 )
 
 const PlayerPrompt = "Please enter the number of players: "
 
-type CLI struct {
-	store   store.PlayerStore
-	in      *bufio.Scanner
-	out     io.Writer
-	alerter scheduler.BlindAlerter
+type Game interface {
+	Start(numberOfPlayers int)
 }
 
-func NewCLI(store store.PlayerStore, in io.Reader, out io.Writer, alerter scheduler.BlindAlerter) *CLI {
+type CLI struct {
+	store store.PlayerStore
+	in    *bufio.Scanner
+	out   io.Writer
+	game  Game
+}
+
+func NewCLI(store store.PlayerStore, in io.Reader, out io.Writer, game Game) *CLI {
 	return &CLI{
-		store:   store,
-		in:      bufio.NewScanner(in),
-		out:     out,
-		alerter: alerter,
+		store: store,
+		in:    bufio.NewScanner(in),
+		out:   out,
+		game:  game,
 	}
 }
 
@@ -35,19 +37,9 @@ func (cli *CLI) PlayPoker() {
 
 	numberOfPlayers, _ := strconv.Atoi(cli.readLine())
 
-	cli.scheduleBlindAlerts(numberOfPlayers)
+	cli.game.Start(numberOfPlayers)
 	userInput := cli.readLine()
 	cli.store.RecordWin(extractWinner(userInput))
-}
-
-func (cli *CLI) scheduleBlindAlerts(numberOfPlayers int) {
-	blindIncrement := time.Duration(5+numberOfPlayers) * time.Minute
-	blinds := []int{100, 200, 300, 400, 500, 600, 800, 1000, 2000, 4000, 8000}
-	blindTime := 0 * time.Second
-	for _, blind := range blinds {
-		cli.alerter.ScheduleAlertAt(blindTime, blind)
-		blindTime = blindTime + blindIncrement
-	}
 }
 
 func extractWinner(userInput string) string {
