@@ -8,6 +8,7 @@ import (
 	"github.com/bryack/lgwt_app/adapters/alerter"
 	"github.com/bryack/lgwt_app/adapters/cli"
 	"github.com/bryack/lgwt_app/filesystem"
+	"github.com/bryack/lgwt_app/game"
 	"github.com/bryack/lgwt_app/scheduler"
 )
 
@@ -20,9 +21,11 @@ func main() {
 	}
 	defer close()
 
+	g := game.NewGame(scheduler.BlindAlerterFunc(alerter.StdOutAlerter), store)
+
 	fmt.Println("Let's play poker")
 	fmt.Println("Type {Name} wins to record a win")
 
-	cli.NewCLI(store, os.Stdin, os.Stdout, scheduler.BlindAlerterFunc(alerter.StdOutAlerter)).PlayPoker()
+	cli.NewCLI(os.Stdin, os.Stdout, g).PlayPoker()
 
 }

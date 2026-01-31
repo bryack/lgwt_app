@@ -6,29 +6,26 @@ import (
 	"io"
 	"strconv"
 	"strings"
-
-	"github.com/bryack/lgwt_app/store"
 )
 
 const PlayerPrompt = "Please enter the number of players: "
 
 type Game interface {
 	Start(numberOfPlayers int)
+	Finish(winner string)
 }
 
 type CLI struct {
-	store store.PlayerStore
-	in    *bufio.Scanner
-	out   io.Writer
-	game  Game
+	in   *bufio.Scanner
+	out  io.Writer
+	game Game
 }
 
-func NewCLI(store store.PlayerStore, in io.Reader, out io.Writer, game Game) *CLI {
+func NewCLI(in io.Reader, out io.Writer, game Game) *CLI {
 	return &CLI{
-		store: store,
-		in:    bufio.NewScanner(in),
-		out:   out,
-		game:  game,
+		in:   bufio.NewScanner(in),
+		out:  out,
+		game: game,
 	}
 }
 
@@ -39,7 +36,7 @@ func (cli *CLI) PlayPoker() {
 
 	cli.game.Start(numberOfPlayers)
 	userInput := cli.readLine()
-	cli.store.RecordWin(extractWinner(userInput))
+	cli.game.Finish(extractWinner(userInput))
 }
 
 func extractWinner(userInput string) string {

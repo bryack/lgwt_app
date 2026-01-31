@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bryack/lgwt_app/game"
+	"github.com/bryack/lgwt_app/testhelpers"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,8 +29,9 @@ func (s *SpyBlindAlerter) ScheduleAlertAt(at time.Duration, amount int) {
 
 func TestGame_Start(t *testing.T) {
 	t.Run("it schedules printing of blind values", func(t *testing.T) {
+		store := &testhelpers.StubPlayerStore{}
 		blindAlerter := &SpyBlindAlerter{}
-		g := game.NewGame(blindAlerter)
+		g := game.NewGame(blindAlerter, store)
 
 		g.Start(5)
 
@@ -49,7 +51,7 @@ func TestGame_Start(t *testing.T) {
 
 		for i, tt := range tests {
 			t.Run(fmt.Sprint(tt), func(t *testing.T) {
-				if len(blindAlerter.alerts) <= 1 {
+				if len(blindAlerter.alerts) <= i {
 					t.Fatalf("alert %d was not scheduled %v", i, blindAlerter.alerts)
 				}
 
@@ -60,4 +62,16 @@ func TestGame_Start(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestGame_Finish(t *testing.T) {
+	store := &testhelpers.StubPlayerStore{}
+	blindAlerter := &SpyBlindAlerter{}
+	g := game.NewGame(blindAlerter, store)
+
+	winner := "Cleo"
+	g.Finish(winner)
+
+	assert.Equal(t, 1, len(store.WinCalls))
+	assert.Equal(t, winner, store.WinCalls[0])
 }
