@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -10,21 +11,26 @@ import (
 	"github.com/bryack/lgwt_app/store"
 )
 
+const PlayerPrompt = "Please enter the number of players: "
+
 type CLI struct {
 	store   store.PlayerStore
 	in      *bufio.Scanner
+	out     io.Writer
 	alerter scheduler.BlindAlerter
 }
 
-func NewCLI(store store.PlayerStore, in io.Reader, alerter scheduler.BlindAlerter) *CLI {
+func NewCLI(store store.PlayerStore, in io.Reader, out io.Writer, alerter scheduler.BlindAlerter) *CLI {
 	return &CLI{
 		store:   store,
 		in:      bufio.NewScanner(in),
+		out:     out,
 		alerter: alerter,
 	}
 }
 
 func (cli *CLI) PlayPoker() {
+	fmt.Fprint(cli.out, PlayerPrompt)
 	cli.scheduleBlindAlerts()
 	userInput := cli.readLine()
 	cli.store.RecordWin(extractWinner(userInput))

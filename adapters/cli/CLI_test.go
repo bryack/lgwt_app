@@ -1,6 +1,7 @@
 package cli_test
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"testing"
@@ -12,6 +13,9 @@ import (
 )
 
 var dummySpyAlerter = &SpyBlindAlerter{}
+var dummyPlayerStore = &testhelpers.StubPlayerStore{}
+var dummyStdIn = &bytes.Buffer{}
+var dummyStdOut = &bytes.Buffer{}
 
 type scheduledAlert struct {
 	at     time.Duration
@@ -34,7 +38,7 @@ func TestCLI(t *testing.T) {
 	t.Run("record chris win from user input", func(t *testing.T) {
 		in := strings.NewReader("Chris wins\n")
 		playerStore := &testhelpers.StubPlayerStore{}
-		c := cli.NewCLI(playerStore, in, dummySpyAlerter)
+		c := cli.NewCLI(playerStore, in, dummyStdOut, dummySpyAlerter)
 		c.PlayPoker()
 		assert.True(t, len(playerStore.WinCalls) != 0)
 
@@ -45,7 +49,7 @@ func TestCLI(t *testing.T) {
 	t.Run("record cleo win from user input", func(t *testing.T) {
 		in := strings.NewReader("Cleo wins\n")
 		playerStore := &testhelpers.StubPlayerStore{}
-		c := cli.NewCLI(playerStore, in, dummySpyAlerter)
+		c := cli.NewCLI(playerStore, in, dummyStdOut, dummySpyAlerter)
 		c.PlayPoker()
 		assert.True(t, len(playerStore.WinCalls) != 0)
 
@@ -58,7 +62,7 @@ func TestCLI(t *testing.T) {
 		in := strings.NewReader("Cleo wins\n")
 		playerStore := &testhelpers.StubPlayerStore{}
 		blindAlerter := &SpyBlindAlerter{}
-		c := cli.NewCLI(playerStore, in, blindAlerter)
+		c := cli.NewCLI(playerStore, in, dummyStdOut, blindAlerter)
 		c.PlayPoker()
 
 		tests := []scheduledAlert{
@@ -87,5 +91,16 @@ func TestCLI(t *testing.T) {
 				assert.Equal(t, alert.at, tt.at)
 			})
 		}
+	})
+
+	t.Run("it prompts the user to enter the number of players", func(t *testing.T) {
+		stdout := &bytes.Buffer{}
+		c := cli.NewCLI(dummyPlayerStore, dummyStdIn, stdout, dummySpyAlerter)
+		c.PlayPoker()
+
+		got := stdout.String()
+		want := cli.PlayerPrompt
+
+		assert.Equal(t, want, got)
 	})
 }
