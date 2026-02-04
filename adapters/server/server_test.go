@@ -160,3 +160,22 @@ func getLeagueFromResponse(t *testing.T, body io.Reader) (league []domain.Player
 	}
 	return
 }
+
+func TestGame(t *testing.T) {
+
+	t.Run("GET /game returns 200", func(t *testing.T) {
+		store := testhelpers.StubPlayerStore{}
+		server := NewPlayerServer(&store)
+		request, err := newGameRequest(t)
+		assert.NoError(t, err)
+		response := httptest.NewRecorder()
+		server.ServeHTTP(response, request)
+
+		assertStatus(t, response.Code, http.StatusOK)
+	})
+}
+
+func newGameRequest(t *testing.T) (*http.Request, error) {
+	t.Helper()
+	return http.NewRequest(http.MethodGet, "/game", nil)
+}
