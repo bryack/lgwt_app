@@ -1,6 +1,8 @@
 package game
 
 import (
+	"io"
+	"os"
 	"time"
 
 	"github.com/bryack/lgwt_app/scheduler"
@@ -24,12 +26,12 @@ func (g *Game) ScheduleBlindAlerts(numberOfPlayers int) {
 	blinds := []int{100, 200, 300, 400, 500, 600, 800, 1000, 2000, 4000, 8000}
 	blindTime := 0 * time.Second
 	for _, blind := range blinds {
-		g.alerter.ScheduleAlertAt(blindTime, blind)
+		g.alerter.ScheduleAlertAt(blindTime, blind, os.Stdout)
 		blindTime = blindTime + blindIncrement
 	}
 }
 
-func (g *Game) Start(numberOfPlayers int) {
+func (g *Game) Start(numberOfPlayers int, alertsDestination io.Writer) {
 	g.ScheduleBlindAlerts(numberOfPlayers)
 }
 

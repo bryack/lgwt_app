@@ -12,7 +12,7 @@ const PlayerPrompt = "Please enter the number of players: "
 const BadPlayerInputErrMsg = "Bad value received for number of players, please try again with a number"
 
 type Game interface {
-	Start(numberOfPlayers int)
+	Start(numberOfPlayers int, alertsDestination io.Writer)
 	Finish(winner string)
 }
 
@@ -38,7 +38,7 @@ func (cli *CLI) PlayPoker() {
 		fmt.Fprint(cli.out, BadPlayerInputErrMsg)
 		return
 	}
-	cli.game.Start(numberOfPlayers)
+	cli.game.Start(numberOfPlayers, cli.out)
 	userInput := cli.readLine()
 	cli.game.Finish(extractWinner(userInput))
 }

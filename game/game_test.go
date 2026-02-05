@@ -2,6 +2,7 @@ package game_test
 
 import (
 	"fmt"
+	"io"
 	"testing"
 	"time"
 
@@ -23,7 +24,7 @@ type SpyBlindAlerter struct {
 	alerts []scheduledAlert
 }
 
-func (s *SpyBlindAlerter) ScheduleAlertAt(at time.Duration, amount int) {
+func (s *SpyBlindAlerter) ScheduleAlertAt(at time.Duration, amount int, to io.Writer) {
 	s.alerts = append(s.alerts, scheduledAlert{at: at, amount: amount})
 }
 
@@ -33,7 +34,7 @@ func TestGame_Start(t *testing.T) {
 		blindAlerter := &SpyBlindAlerter{}
 		g := game.NewGame(blindAlerter, store)
 
-		g.Start(5)
+		g.Start(5, io.Discard)
 
 		tests := []scheduledAlert{
 			{0 * time.Second, 100},

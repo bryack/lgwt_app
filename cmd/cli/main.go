@@ -21,7 +21,7 @@ func main() {
 	}
 	defer close()
 
-	g := game.NewGame(scheduler.BlindAlerterFunc(alerter.StdOutAlerter), store)
+	g := game.NewGame(scheduler.BlindAlerterFunc(alerter.Alerter), store)
 
 	fmt.Println("Let's play poker")
 	fmt.Println("Type {Name} wins to record a win")

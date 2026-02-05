@@ -2,11 +2,12 @@ package alerter
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"time"
 )
 
-func StdOutAlerter(duration time.Duration, amount int) {
+func Alerter(duration time.Duration, amount int, to io.Writer) {
 	time.AfterFunc(duration, func() {
 		fmt.Fprintf(os.Stdout, "Blind is now %d\n", amount)
 	})

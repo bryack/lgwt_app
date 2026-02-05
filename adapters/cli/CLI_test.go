@@ -2,6 +2,7 @@ package cli_test
 
 import (
 	"bytes"
+	"io"
 	"strings"
 	"testing"
 
@@ -15,7 +16,7 @@ type SpyGame struct {
 	startCalled      bool
 }
 
-func (s *SpyGame) Start(numberOfPlayers int) {
+func (s *SpyGame) Start(numberOfPlayers int, alertsDestination io.Writer) {
 	s.startCalledWith = numberOfPlayers
 	s.startCalled = true
 }
