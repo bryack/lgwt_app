@@ -35,11 +35,13 @@ type SpyGame struct {
 	StartCalledWith  int
 	FinishCalledWith string
 	StartCalled      bool
+	BlindAlert       []byte
 }
 
 func (s *SpyGame) Start(numberOfPlayers int, alertsDestination io.Writer) {
-	s.StartCalledWith = numberOfPlayers
 	s.StartCalled = true
+	s.StartCalledWith = numberOfPlayers
+	alertsDestination.Write(s.BlindAlert)
 }
 
 func (s *SpyGame) Finish(winner string) {

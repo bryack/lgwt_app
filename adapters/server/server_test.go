@@ -179,22 +179,26 @@ func TestGame(t *testing.T) {
 
 		assertStatus(t, response.Code, http.StatusOK)
 	})
-	t.Run("when we get a message over a websocket it is a winner of a game", func(t *testing.T) {
-		store := &testhelpers.StubPlayerStore{}
-		game := &testhelpers.SpyGame{}
+	t.Run("start a game with 3 players, send some blind alerts down WS and declare Ruth the winner", func(t *testing.T) {
+		expectedBlindAlert := "Blind is 100"
 		winner := "Ruth"
+
+		store := &testhelpers.StubPlayerStore{}
+		game := &testhelpers.SpyGame{BlindAlert: []byte(expectedBlindAlert)}
+
 		server := httptest.NewServer(mustMakePlayerServer(t, store, game))
 		wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws"
 		ws := mustDialWS(t, wsURL)
+
 		defer server.Close()
 		defer ws.Close()
 
 		writeWSMessage(t, ws, "3")
 		writeWSMessage(t, ws, winner)
 
-		time.Sleep(10 * time.Millisecond)
-		assert.Equal(t, 3, game.StartCalledWith)
-		assert.Equal(t, winner, game.FinishCalledWith)
+		assertGameStartedWith(t, game, 3)
+		assertFinishCalledWith(t, game, winner)
+		within(t, 10*time.Millisecond, func() { assertWebsocketGotMsg(t, ws, expectedBlindAlert) })
 	})
 }
 
@@ -219,9 +223,67 @@ func mustDialWS(t *testing.T, wsURL string) *websocket.Conn {
 	return ws
 }
 
-func writeWSMessage(t testing.TB, ws *websocket.Conn, winner string) {
+func writeWSMessage(t testing.TB, conn *websocket.Conn, winner string) {
 	t.Helper()
-	if err := ws.WriteMessage(websocket.TextMessage, []byte(winner)); err != nil {
+	if err := conn.WriteMessage(websocket.TextMessage, []byte(winner)); err != nil {
 		t.Fatalf("failed to send message over ws connection: %v", err)
 	}
+}
+
+func within(t testing.TB, d time.Duration, assert func()) {
+	t.Helper()
+
+	done := make(chan struct{}, 1)
+
+	go func() {
+		assert()
+		done <- struct{}{}
+	}()
+
+	select {
+	case <-time.After(d):
+		t.Error("time out")
+	case <-done:
+	}
+}
+
+func assertWebsocketGotMsg(t *testing.T, ws *websocket.Conn, want string) {
+	_, msg, _ := ws.ReadMessage()
+	if string(msg) != want {
+		t.Errorf("got %q, want %q", string(msg), want)
+	}
+}
+
+func assertGameStartedWith(t testing.TB, game *testhelpers.SpyGame, numberOfPlayersWanted int) {
+	t.Helper()
+
+	passed := retryUntil(500*time.Millisecond, func() bool {
+		return game.StartCalledWith == numberOfPlayersWanted
+	})
+
+	if !passed {
+		t.Errorf("wanted Start called with %d but got %d", numberOfPlayersWanted, game.StartCalledWith)
+	}
+}
+
+func assertFinishCalledWith(t testing.TB, game *testhelpers.SpyGame, winner string) {
+	t.Helper()
+
+	passed := retryUntil(500*time.Millisecond, func() bool {
+		return game.FinishCalledWith == winner
+	})
+
+	if !passed {
+		t.Errorf("expected finish called with %q but got %q", winner, game.FinishCalledWith)
+	}
+}
+
+func retryUntil(d time.Duration, f func() bool) bool {
+	deadline := time.Now().Add(d)
+	for time.Now().Before(deadline) {
+		if f() {
+			return true
+		}
+	}
+	return false
 }
