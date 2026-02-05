@@ -30,6 +30,18 @@ func (s *StubPlayerStore) GetLeague() (domain.League, error) {
 	return s.League, nil
 }
 
+func AssertPlayerWin(t testing.TB, store *StubPlayerStore, winner string) {
+	t.Helper()
+
+	if len(store.WinCalls) <= 0 {
+		t.Fatalf("length of calls to RecordWin should be at least 1, got %d", len(store.WinCalls))
+	}
+
+	if store.WinCalls[0] != winner {
+		t.Errorf("expected winner is %q, got %q", winner, store.WinCalls[0])
+	}
+}
+
 func CreateTempFile(t testing.TB, initialData string) (*os.File, func()) {
 	t.Helper()
 

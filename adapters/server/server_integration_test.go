@@ -18,7 +18,7 @@ func TestRecordingWinsAndRetrievingThem(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create file system player store: %v", err)
 	}
-	server := NewPlayerServer(store)
+	server := mustMakePlayerServer(t, store)
 	player := "Pepper"
 
 	server.ServeHTTP(httptest.NewRecorder(), newPostWinRequest(player))
