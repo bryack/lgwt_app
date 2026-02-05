@@ -17,6 +17,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var dummyGame = &testhelpers.SpyGame{}
+
 func TestGETPlayers(t *testing.T) {
 	store := &testhelpers.StubPlayerStore{
 		Scores: map[string]int{
@@ -24,7 +26,7 @@ func TestGETPlayers(t *testing.T) {
 			"Floyd":  10,
 		},
 	}
-	server := mustMakePlayerServer(t, store)
+	server := mustMakePlayerServer(t, store, dummyGame)
 
 	tests := []struct {
 		name               string
@@ -90,7 +92,7 @@ func TestStoreWins(t *testing.T) {
 		WinCalls: nil,
 	}
 
-	server := mustMakePlayerServer(t, store)
+	server := mustMakePlayerServer(t, store, dummyGame)
 	t.Run("it returns accepted on POST", func(t *testing.T) {
 		player := "Pepper"
 		request := newPostWinRequest(player)
@@ -122,7 +124,7 @@ func TestLeague(t *testing.T) {
 	}
 	t.Run("it returns 200 on /league", func(t *testing.T) {
 		store := &testhelpers.StubPlayerStore{Scores: nil, WinCalls: nil, League: wantedLeague, Err: nil}
-		server := mustMakePlayerServer(t, store)
+		server := mustMakePlayerServer(t, store, dummyGame)
 
 		request, err := newLeagueRequest(t)
 		assert.NoError(t, err)
@@ -139,7 +141,7 @@ func TestLeague(t *testing.T) {
 
 	t.Run("handle 500", func(t *testing.T) {
 		store := &testhelpers.StubPlayerStore{Scores: nil, WinCalls: nil, League: wantedLeague, Err: errors.New("database connection failed")}
-		server := mustMakePlayerServer(t, store)
+		server := mustMakePlayerServer(t, store, dummyGame)
 
 		request, err := newLeagueRequest(t)
 		assert.NoError(t, err)
@@ -169,7 +171,7 @@ func TestGame(t *testing.T) {
 
 	t.Run("GET /game returns 200", func(t *testing.T) {
 		store := &testhelpers.StubPlayerStore{}
-		server := mustMakePlayerServer(t, store)
+		server := mustMakePlayerServer(t, store, dummyGame)
 		request, err := newGameRequest(t)
 		assert.NoError(t, err)
 		response := httptest.NewRecorder()
@@ -179,18 +181,20 @@ func TestGame(t *testing.T) {
 	})
 	t.Run("when we get a message over a websocket it is a winner of a game", func(t *testing.T) {
 		store := &testhelpers.StubPlayerStore{}
+		game := &testhelpers.SpyGame{}
 		winner := "Ruth"
-		server := httptest.NewServer(mustMakePlayerServer(t, store))
-		defer server.Close()
-
+		server := httptest.NewServer(mustMakePlayerServer(t, store, game))
 		wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws"
 		ws := mustDialWS(t, wsURL)
+		defer server.Close()
 		defer ws.Close()
 
+		writeWSMessage(t, ws, "3")
 		writeWSMessage(t, ws, winner)
 
 		time.Sleep(10 * time.Millisecond)
-		testhelpers.AssertPlayerWin(t, store, winner)
+		assert.Equal(t, 3, game.StartCalledWith)
+		assert.Equal(t, winner, game.FinishCalledWith)
 	})
 }
 
@@ -199,8 +203,8 @@ func newGameRequest(t *testing.T) (*http.Request, error) {
 	return http.NewRequest(http.MethodGet, "/game", nil)
 }
 
-func mustMakePlayerServer(t *testing.T, store store.PlayerStore) *PlayerServer {
-	server, err := NewPlayerServer(store)
+func mustMakePlayerServer(t *testing.T, store store.PlayerStore, game domain.Game) *PlayerServer {
+	server, err := NewPlayerServer(store, game)
 	if err != nil {
 		t.Fatal("failed to create player server", err)
 	}

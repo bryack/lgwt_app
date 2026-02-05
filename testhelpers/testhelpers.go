@@ -1,6 +1,7 @@
 package testhelpers
 
 import (
+	"io"
 	"os"
 	"testing"
 
@@ -28,6 +29,21 @@ func (s *StubPlayerStore) GetLeague() (domain.League, error) {
 		return domain.League{}, s.Err
 	}
 	return s.League, nil
+}
+
+type SpyGame struct {
+	StartCalledWith  int
+	FinishCalledWith string
+	StartCalled      bool
+}
+
+func (s *SpyGame) Start(numberOfPlayers int, alertsDestination io.Writer) {
+	s.StartCalledWith = numberOfPlayers
+	s.StartCalled = true
+}
+
+func (s *SpyGame) Finish(winner string) {
+	s.FinishCalledWith = winner
 }
 
 func AssertPlayerWin(t testing.TB, store *StubPlayerStore, winner string) {

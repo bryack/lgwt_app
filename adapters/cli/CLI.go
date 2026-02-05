@@ -6,23 +6,20 @@ import (
 	"io"
 	"strconv"
 	"strings"
+
+	"github.com/bryack/lgwt_app/domain"
 )
 
 const PlayerPrompt = "Please enter the number of players: "
 const BadPlayerInputErrMsg = "Bad value received for number of players, please try again with a number"
 
-type Game interface {
-	Start(numberOfPlayers int, alertsDestination io.Writer)
-	Finish(winner string)
-}
-
 type CLI struct {
 	in   *bufio.Scanner
 	out  io.Writer
-	game Game
+	game domain.Game
 }
 
-func NewCLI(in io.Reader, out io.Writer, game Game) *CLI {
+func NewCLI(in io.Reader, out io.Writer, game domain.Game) *CLI {
 	return &CLI{
 		in:   bufio.NewScanner(in),
 		out:  out,

@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
+	"github.com/bryack/lgwt_app/domain"
 	"github.com/bryack/lgwt_app/store"
 	"github.com/gorilla/websocket"
 )
@@ -26,9 +29,10 @@ type PlayerServer struct {
 	Store store.PlayerStore
 	http.Handler
 	template *template.Template
+	game     domain.Game
 }
 
-func NewPlayerServer(store store.PlayerStore) (*PlayerServer, error) {
+func NewPlayerServer(store store.PlayerStore, game domain.Game) (*PlayerServer, error) {
 	p := new(PlayerServer)
 
 	tmpl, err := template.ParseFiles(htmlTemplatePath)
@@ -38,6 +42,7 @@ func NewPlayerServer(store store.PlayerStore) (*PlayerServer, error) {
 
 	p.Store = store
 	p.template = tmpl
+	p.game = game
 
 	router := http.NewServeMux()
 	router.Handle("/league", http.HandlerFunc(p.leagueHandler))
@@ -91,6 +96,11 @@ func (p *PlayerServer) gameHandler(w http.ResponseWriter, r *http.Request) {
 
 func (p *PlayerServer) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	conn, _ := wsUpgrader.Upgrade(w, r, nil)
+
+	_, numberOfPlayersMsg, _ := conn.ReadMessage()
+	numberOfPlayers, _ := strconv.Atoi(string(numberOfPlayersMsg))
+	p.game.Start(numberOfPlayers, io.Discard)
+
 	_, winnerMsg, _ := conn.ReadMessage()
-	p.Store.RecordWin(string(winnerMsg))
+	p.game.Finish(string(winnerMsg))
 }
